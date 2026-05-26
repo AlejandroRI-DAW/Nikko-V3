@@ -1,0 +1,76 @@
+services:
+  node_backend:
+    build:
+      context: ./backend/node_app
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - AI_SERVICE_URL=http://ai_service:8000
+    restart: unless-stopped
+    depends_on:
+      - ai_service
+
+  ai_service:
+    build:
+      context: ./backend/ai_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=${OLLAMA_FALLBACK_HOST}
+      - OLLAMA_FALLBACK_HOST=
+      - NIKKO_MODEL_NAME=${NIKKO_MODEL_NAME}
+      - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT}
+      - MONGODB_URL=${MONGODB_URL}
+      - MONGODB_DB=${MONGODB_DB}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - SAGEMAKER_ENDPOINT_NAME=${SAGEMAKER_ENDPOINT_NAME}
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    restart: unless-stopped
+    depends_on: []
+
+  ollama:
+    profiles:
+      - local-ollama
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama_data:/root/.ollama
+      - ./ai_config:/ai_config
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_ORIGINS=*
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - node_backend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    restart: unless-stopped
+    depends_on:
+      - ai_service
