@@ -1,5 +1,8 @@
 import { Phone, Mail, AlertCircle } from 'lucide-react';
-
+import imgAcoso from '../../styles/fotos/1.png';
+import imgObservador from '../../styles/fotos/2.png';
+import imgLlamada from '../../styles/fotos/3.png';
+import imgCrisis from '../../styles/fotos/4.png';
 export function Emergency() {
   const contacts = [
     {
@@ -106,7 +109,7 @@ export function Emergency() {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <div className="call-card">
               <img
-                src="../../styles/fotos/1.png"
+                src={imgAcoso}
                 alt="Acoso"
                 className="mb-2 w-full h-auto rounded-lg"
                 style={{ border: '3px solid #0084A8' }}
@@ -115,7 +118,7 @@ export function Emergency() {
 
             <div className="call-card">
               <img
-                src="../../styles/fotos/2.png"
+                src={imgObservador}
                 alt="Observador"
                 className="mb-2 w-full h-auto rounded-lg"
                 style={{ border: '3px solid #00A894' }}
@@ -124,7 +127,7 @@ export function Emergency() {
 
             <div className="call-card">
               <img
-                src="../../styles/fotos/3.png"
+                src={imgLlamada}
                 alt="Llamada"
                 className="mb-2 w-full h-auto rounded-lg"
                 style={{ border: '3px solid #8600A8' }}
@@ -133,7 +136,7 @@ export function Emergency() {
 
             <div className="call-card">
               <img
-                src="../../styles/fotos/4.png"
+                src={imgCrisis}
                 alt="Crisis"
                 className="mb-2 w-full h-auto rounded-lg"
                 style={{ border: '3px solid #BF4300' }}
