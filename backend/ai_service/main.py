@@ -864,11 +864,7 @@ def grafana_interacciones(request: Request):
 @app.get("/grafana/stats")
 def grafana_stats(request: Request):
     """
-    Estadisticas agregadas para dashboard:
-      - Total de interacciones
-      - Distribucion por nivel
-      - Distribucion por categoria
-      - Latencia promedio
+    Estadisticas agregadas para dashboard.
     """
     total = request.app.mongo_collection.count_documents({})
 
@@ -896,3 +892,42 @@ def grafana_stats(request: Request):
         "por_categoria": [{"categoria": x["_id"], "count": x["count"]} for x in por_categoria],
         "latencia_promedio_ms": round(latencia_promedio or 0, 2),
     }
+
+
+@app.get("/grafana/por-categoria")
+def grafana_por_categoria(request: Request):
+    pipeline = [
+        {
+            "$match": {
+                "categoria": {
+                    "$nin": [
+                        "input_invalido",
+                        "fuera_de_alcance",
+                        "error_sistema",
+                        "error_interno",
+                    ]
+                }
+            }
+        },
+        {"$group": {"_id": "$categoria", "total": {"$sum": 1}}},
+        {"$project": {"_id": 0, "categoria": "$_id", "total": 1}},
+        {"$sort": {"total": -1}},
+    ]
+
+    return list(request.app.mongo_collection.aggregate(pipeline))
+
+
+@app.get("/grafana/por-nivel")
+def grafana_por_nivel(request: Request):
+    pipeline = [
+        {"$group": {"_id": "$nivel", "total": {"$sum": 1}}},
+        {"$project": {"_id": 0, "nivel": "$_id", "total": 1}},
+        {"$sort": {"nivel": 1}},
+    ]
+    return list(request.app.mongo_collection.aggregate(pipeline))
+
+
+@app.get("/grafana/total-interacciones")
+def grafana_total_interacciones(request: Request):
+    total = request.app.mongo_collection.count_documents({})
+    return [{"total": total}]

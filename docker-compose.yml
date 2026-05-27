@@ -9,6 +9,9 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - AI_SERVICE_URL=http://ai_service:8000
+      - MONGODB_URL=${MONGODB_URL}
+      - MONGODB_DB=${MONGODB_DB}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
     restart: unless-stopped
     depends_on:
       - ai_service
@@ -71,6 +74,12 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
     restart: unless-stopped
     depends_on:
       - ai_service
+
+volumes:
+  grafana_data:
