@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, History, LogIn, Mic, Plus, Send, Smile, Meh, Frown, Angry, Square, Trash2, Volume2, X } from 'lucide-react';
+import { ChevronDown, History, LogIn, Mic, PanelLeftClose, Plus, Send, Smile, Meh, Frown, Angry, Square, Trash2, Volume2, X } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 const robotIcon = '/assets/robot_sin_fondo.png';
@@ -141,6 +141,8 @@ export function Chat() {
   const [userMessageCount, setUserMessageCount] = useState(0);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [chatToDelete, setChatToDelete] = useState<ChatSummary | null>(null);
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
+  const [isMobileHistoryOpen, setIsMobileHistoryOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
@@ -177,11 +179,22 @@ export function Chat() {
     }
   }, [nickname]);
 
+  useEffect(() => {
+    const toggleSidebar = (event: Event) => {
+      const nextOpen = (event as CustomEvent<{ open?: boolean }>).detail?.open;
+      setIsHistorySidebarOpen((open) => nextOpen ?? !open);
+    };
+
+    window.addEventListener('nikko-history-sidebar-toggle', toggleSidebar);
+    return () => window.removeEventListener('nikko-history-sidebar-toggle', toggleSidebar);
+  }, []);
+
   const startNewChat = () => {
     sessionIdRef.current = crypto.randomUUID?.() || `session-${Date.now()}`;
     setMessages([createInitialMessage()]);
     setInput('');
     setUserMessageCount(0);
+    setIsMobileHistoryOpen(false);
   };
 
   const loadChat = async (chatId: string) => {
@@ -217,6 +230,7 @@ export function Chat() {
       sessionIdRef.current = chatId;
       setMessages(loadedMessages);
       setUserMessageCount(loadedMessages.filter((message) => message.sender === 'user').length);
+      setIsMobileHistoryOpen(false);
     } catch (error) {
       console.error('Error abriendo chat:', error);
     }
@@ -272,13 +286,6 @@ export function Chat() {
     } catch (error) {
       setAuthError(authMode === 'login' ? 'Nickname o contraseña incorrectos.' : 'No he podido crear esa cuenta.');
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('nikko-nickname');
-    setNickname('');
-    setChatSummaries([]);
-    startNewChat();
   };
 
   const playBotAudio = async (message: Message) => {
@@ -470,22 +477,48 @@ export function Chat() {
     <div className="flex h-screen" style={{ background: 'var(--color-background)' }}>
       {nickname && (
         <aside
-          className="hidden lg:flex w-72 flex-col border-r"
+          className="hidden md:flex flex-col border-r overflow-hidden transition-[width,opacity,border-color] duration-300 ease-out"
           style={{
+            width: isHistorySidebarOpen ? '18rem' : '0rem',
+            opacity: isHistorySidebarOpen ? 1 : 0,
             background: 'var(--color-surface)',
-            borderColor: 'var(--color-secondary)',
+            borderColor: isHistorySidebarOpen ? 'var(--color-secondary)' : 'transparent',
+            pointerEvents: isHistorySidebarOpen ? 'auto' : 'none',
           }}
+          aria-hidden={!isHistorySidebarOpen}
         >
-          <div className="p-4 border-b" style={{ borderColor: 'var(--color-secondary)' }}>
-            <button
-              type="button"
-              onClick={startNewChat}
-              className="w-full px-3 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm"
-              style={{ background: 'var(--color-primary)', color: 'var(--color-surface)' }}
-            >
-              <Plus className="w-4 h-4" />
-              Nuevo chat
-            </button>
+          <div
+            className="w-72 shrink-0 transition-transform duration-300 ease-out"
+            style={{ transform: isHistorySidebarOpen ? 'translateX(0)' : 'translateX(-12px)' }}
+          >
+          <div className="h-[97px] border-b flex items-center p-4" style={{ borderColor: 'var(--color-secondary)' }}>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={startNewChat}
+                className="w-52 h-10 px-4 rounded-xl inline-flex items-center justify-center gap-2 text-sm font-medium leading-none whitespace-nowrap"
+                style={{ background: 'var(--color-primary)', color: 'var(--color-surface)' }}
+              >
+                <Plus className="w-4 h-4 shrink-0" strokeWidth={2.2} />
+                <span className="leading-none">Nueva conversacion</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsHistorySidebarOpen(false);
+                  window.dispatchEvent(new CustomEvent('nikko-history-sidebar-toggle', { detail: { open: false } }));
+                }}
+                className="w-11 h-10 rounded-xl inline-flex items-center justify-center transition-all"
+                style={{
+                  background: 'var(--color-background)',
+                  color: 'var(--color-text-secondary)',
+                  border: '1px solid var(--color-secondary)',
+                }}
+                title="Cerrar barra lateral"
+              >
+                <PanelLeftClose className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 px-4 pt-4 pb-2" style={{ color: 'var(--color-text)' }}>
             <History className="w-4 h-4" />
@@ -532,31 +565,19 @@ export function Chat() {
               </p>
             )}
           </div>
-          <div className="p-4 border-t" style={{ borderColor: 'var(--color-secondary)' }}>
-            <div className="text-sm mb-2 truncate" style={{ color: 'var(--color-text)' }}>
-              {nickname}
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="text-sm"
-              style={{ color: '#991B1B' }}
-            >
-              Cerrar sesion
-            </button>
           </div>
         </aside>
       )}
 
       <div className="flex flex-col flex-1 min-w-0" style={{ background: 'var(--color-background)' }}>
-      <div
-        className="p-4 md:p-6 border-b"
+        <div
+        className="relative z-20 h-[97px] px-4 md:px-6 border-b flex items-center"
         style={{
           background: 'var(--color-surface)',
           borderColor: 'var(--color-secondary)',
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="w-full flex items-center gap-3">
           <span
             className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
             style={{ background: 'var(--color-gradient)' }}
@@ -573,9 +594,92 @@ export function Chat() {
           </h1>
           <div className="ml-auto flex items-center gap-2">
             {nickname ? (
-              <span className="hidden sm:inline text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                {nickname}
-              </span>
+              <>
+                <div className="relative md:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileHistoryOpen((open) => !open)}
+                    className="h-10 px-3 rounded-xl inline-flex items-center gap-2 text-sm transition-all"
+                    style={{
+                      background: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-secondary)',
+                    }}
+                    aria-expanded={isMobileHistoryOpen}
+                  >
+                    <History className="w-4 h-4 shrink-0" />
+                    <span>Historial</span>
+                    <ChevronDown
+                      className="w-4 h-4 shrink-0 transition-transform"
+                      style={{ transform: isMobileHistoryOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                    />
+                  </button>
+
+                  {isMobileHistoryOpen && (
+                    <div
+                      className="fixed right-3 top-24 z-50 max-h-[70vh] w-[calc(100vw-1.5rem)] max-w-sm overflow-hidden rounded-2xl border p-3 shadow-xl md:hidden"
+                      style={{
+                        background: 'var(--color-surface)',
+                        borderColor: 'var(--color-secondary)',
+                        color: 'var(--color-text)',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={startNewChat}
+                        className="w-full h-11 px-3 rounded-xl inline-flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
+                        style={{ background: 'var(--color-primary)', color: 'var(--color-surface)' }}
+                      >
+                        <Plus className="w-4 h-4 shrink-0" />
+                        Nueva conversacion
+                      </button>
+
+                      <div className="mt-3 max-h-[52vh] overflow-y-auto space-y-1">
+                        {chatSummaries.map((chat) => (
+                          <div
+                            key={chat.chat_id}
+                            className="group flex items-center gap-1 rounded-xl"
+                            style={{
+                              background: chat.chat_id === sessionIdRef.current ? 'var(--color-background)' : 'transparent',
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => loadChat(chat.chat_id)}
+                              className="min-w-0 flex-1 text-left px-3 py-2 text-sm"
+                              style={{ color: 'var(--color-text)' }}
+                              title={chat.title}
+                            >
+                              <span className="block truncate">{chat.title}</span>
+                              <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                                {chat.count} mensajes
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setChatToDelete(chat)}
+                              className="w-9 h-9 mr-1 rounded-lg flex items-center justify-center"
+                              style={{ color: '#B91C1C' }}
+                              title="Borrar chat"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {!chatSummaries.length && (
+                          <p className="px-3 py-4 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
+                            Tus chats apareceran aqui.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <span className="hidden sm:inline text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  {nickname}
+                </span>
+              </>
             ) : (
               <button
                 type="button"

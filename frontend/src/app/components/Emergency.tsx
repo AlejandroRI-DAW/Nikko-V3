@@ -8,19 +8,19 @@ export function Emergency() {
     {
       name: 'Línea Nacional contra el Bullying',
       phone: '900 018 018',
-      email: 'ayuda@contraelbullying.org',
+      email: 'seguridadescolar@policia.es',
       description: 'Atención 24/7 para casos de acoso escolar',
     },
     {
       name: 'ANAR - Ayuda a Niños y Adolescentes',
-      phone: '900 20 20 10',
-      email: 'telefono@anar.org',
+      phone: '96 160 48 33',
+      email: 'valencia@anar.org',
       description: 'Apoyo psicológico inmediato',
     },
     {
       name: 'Fundación ANAR',
-      phone: '116 111',
-      email: 'contacto@anar.org',
+      phone: '91 72 62 700',
+      email: 'valencia@anar.org',
       description: 'Línea de ayuda para menores',
     },
   ];

@@ -2,16 +2,44 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Heart } from 'lucide-react';
 
+const apiUrl = 'http://127.0.0.1:8000';
+
 export function Login() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/app');
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`${apiUrl}/auth/${isLogin ? 'login' : 'register'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nickname: nickname.trim(),
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('auth_failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('nikko-nickname', data.nickname);
+      navigate('/app');
+    } catch (err) {
+      setError(isLogin ? 'Nickname o contraseña incorrectos.' : 'No he podido crear esa cuenta.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -52,6 +80,7 @@ export function Login() {
                   color: 'var(--color-text)',
                 }}
                 placeholder="Tu nickname"
+                autoComplete="username"
                 required
               />
             </div>
@@ -71,6 +100,7 @@ export function Login() {
                   color: 'var(--color-text)',
                 }}
                 placeholder="********"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
                 required
               />
             </div>
@@ -91,15 +121,29 @@ export function Login() {
               </div>
             )}
 
+            {error && (
+              <div
+                className="rounded-xl px-4 py-3 text-sm"
+                style={{
+                  background: 'rgba(185, 28, 28, 0.12)',
+                  color: '#B91C1C',
+                  border: '1px solid rgba(185, 28, 28, 0.22)',
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
+              disabled={isSubmitting}
+              className="w-full py-3 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
               style={{
                 background: 'var(--color-primary)',
                 color: 'var(--color-surface)',
               }}
             >
-              {isLogin ? 'Iniciar sesion' : 'Crear cuenta'}
+              {isSubmitting ? 'Entrando...' : isLogin ? 'Iniciar sesion' : 'Crear cuenta'}
             </button>
           </form>
 
