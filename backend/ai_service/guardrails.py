@@ -7,6 +7,12 @@ import json
 import re
 from typing import Optional
 
+_PATRON_ECO_APERTURA = re.compile(
+    r"^Me (da|hace|produce|genera) (mucho?|mucha|bastante)?\s?"
+    r"(miedo|vergüenza|verguenza|pena|tristeza|rabia|dolor|mal) que te \w+[.,]\s*",
+    re.IGNORECASE,
+)
+
 
 MENSAJE_FUERA_DE_ALCANCE = (
     "Solo puedo ayudarte con situaciones relacionadas con el bullying o el "
@@ -556,6 +562,8 @@ def limpiar_respuesta_usuario(texto: str, nivel: int) -> str:
     for malo, bueno in sustituciones.items():
         texto = texto.replace(malo, bueno)
 
+    texto = _PATRON_ECO_APERTURA.sub("", texto).strip()
+
     if nivel == 5:
         texto = texto.replace("abrir denuncia", "pedir ayuda urgente")
         texto = texto.replace("denuncia interna", "ayuda urgente")
@@ -604,14 +612,14 @@ def mejorar_respuesta_por_caso(texto_usuario: str, respuesta: dict) -> dict:
             "o la orientadora deben saberlo para poder frenarlo. ¿Ocurre siempre con las mismas personas?"
         )
 
-    if nivel == 2 and "me esconden la mochila despues del patio" in texto:
+    if nivel == 2 and "me esconden la mochila" in texto:
         respuesta["categoria"] = "acoso_recurrente"
         respuesta["accion"] = "derivacion_interna"
         respuesta["recursos"] = ["tutor", "jefatura", "orientadora"]
         respuesta["respuesta_usuario"] = (
-            "Que te escondan la mochila despues del patio es serio, sobre todo si no es la primera vez. "
-            "No tienes que aguantarlo como si fuera una broma. Cuentale a tu tutor o a jefatura cuando pasa "
-            "y quienes suelen estar cerca para que puedan intervenir. ¿Te ha pasado mas veces?"
+            "Que te escondan la mochila no es una broma, sobre todo si pasa mas de una vez. "
+            "Cuentaselo a tu tutor o a jefatura indicando quien suele estar cerca cuando ocurre, "
+            "para que puedan intervenir. ¿Te ha pasado mas veces o solo hoy?"
         )
 
     if nivel == 1 and "no me queda bien un jersey" in texto:
